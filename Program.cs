@@ -5,37 +5,47 @@ namespace MultithreadCaching
     internal class Program
     {
         static int _count = 0;
-        static CachedRepository<int, int> _myRep = new CachedRepository<int, int>(BigCalculation);
-        static ManualResetEventSlim _canProceed = new ManualResetEventSlim();        
+		//static ICachedRepository<int, int> _myRep = new UnboundedCachedRepository<int, int>(BigCalculation);
+		static ICachedRepository<int, int> _myRep = new LRUEvictedCachedRepository<int, int>(BigCalculation, 5);
+		//static ICachedRepository<int, int> _myRep = new OldestEvictedCachedRepository<int, int>(BigCalculation, 5);
+		static ManualResetEventSlim _canProceed = new ManualResetEventSlim();        
 
         static void Main(string[] args)
         {
-            
-            List<Thread> threads = new List<Thread>();
+
+            //TestMultithreadRepo();
+            TestLRUCache();
 
 
-            for(int i = 0; i < 100; i++)
-            {
-                int toPass = RandomNumberGenerator.GetInt32(10);
-                Thread t = new Thread(() => GetAndPrint(toPass));
-                threads.Add(t);
-                t.Start();
-            }
+		}
 
-            _canProceed.Set();
+        static void TestMultithreadRepo()
+        {
+			List<Thread> threads = new List<Thread>();
 
-            foreach(Thread t in threads)
-            {
-                t.Join();
-            }
 
-            Console.WriteLine("Count: " + _count);
-        }
+			for (int i = 0; i < 100; i++)
+			{
+                int toPass = RandomNumberGenerator.GetInt32(20);
+				Thread t = new Thread(() => GetAndPrint(toPass));
+				threads.Add(t);
+				t.Start();
+			}
+
+			_canProceed.Set();
+
+			foreach (Thread t in threads)
+			{
+				t.Join();
+			}
+
+			Console.WriteLine("Count: " + _count);
+		}
 
         static int BigCalculation(int x)
         {
             /*
-             * we simulate a big calculation updating a static counter to keep track of how many time we do this
+             * we simulate a big calculation updating a static counter to keep track of how many time we have a cache miss
              * 
              */
 
@@ -58,43 +68,27 @@ namespace MultithreadCaching
             Console.WriteLine(result);
         }
 
-    }
+        static void TestLRUCache()
+        {           
+            bool exit = false;
+            int input = 0;
 
-    internal class CachedRepository<Value, Result>
-    {
-        private readonly Dictionary<Value, Task<Result>> _results;    
-        private readonly Func<Value, Result> _calcFunctor;
-        private readonly Object _globaLock;      
 
-        public CachedRepository(Func<Value, Result> f) 
-        {            
-            _results = new Dictionary<Value, Task<Result>>();         
-            _calcFunctor = f;
-            _globaLock = new Object();            
-        }
-
-        public Result GetResult(Value v) 
-        {
-            Task<Result>? foundTask = null;
-            bool taskFound = false;               
-
-            lock (_globaLock)
-            {                
-                taskFound = _results.TryGetValue(v, out foundTask);
-                if (!taskFound)       
-                {
-                    Task<Result> t = new Task<Result>(() => _calcFunctor(v));   //maybe it's better to speculatively create the Task outside the Lock
-                    _results.Add(v, t);
-                    foundTask = t;
-                }               
-            }
-
-            if (!taskFound)   //we start the Task outside the lock
+			while (!exit)
             {
-                foundTask!.Start();
+                Console.Write("> ");
+                string inputString = Console.ReadLine();
+                if (inputString.Equals("x", StringComparison.OrdinalIgnoreCase))
+                {
+                    exit = true;
+                }
+                else if(Int32.TryParse(inputString, out input))
+                {
+                    Console.WriteLine(_myRep.GetResult(input));
+                }
             }
 
-            return foundTask!.Result;    //we block until a Result arrives
         }
+
     }
 }
