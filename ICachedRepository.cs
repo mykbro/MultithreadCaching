@@ -10,6 +10,7 @@ namespace MultithreadCaching
 	{
 		public TResult GetResult(TValue value);
 		public Task<TResult> GetResultAsync(TValue value);
+		public void Clear();
 
 	}
 }

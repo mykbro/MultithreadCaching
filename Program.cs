@@ -13,8 +13,8 @@ namespace MultithreadCaching
         static void Main(string[] args)
         {
 
-            //TestMultithreadRepo();
-            TestLRUCache();
+            TestMultithreadRepo();
+            //TestLRUCache();
 
 
 		}
