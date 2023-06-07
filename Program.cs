@@ -3,20 +3,18 @@
 namespace MultithreadCaching
 {
     internal class Program
-    {
-        static int _count = 0;
+    {        
 		//static ICachedRepository<int, int> _myRep = new UnboundedCachedRepository<int, int>(BigCalculation);
 		static ICachedRepository<int, int> _myRep = new LRUEvictedCachedRepository<int, int>(BigCalculation, 5);
-		//static ICachedRepository<int, int> _myRep = new OldestEvictedCachedRepository<int, int>(BigCalculation, 5);
-		static ManualResetEventSlim _canProceed = new ManualResetEventSlim();        
+        //static ICachedRepository<int, int> _myRep = new OldestEvictedCachedRepository<int, int>(BigCalculation, 5);
+
+        static int _count = 0;
+        static ManualResetEventSlim _canProceed = new ManualResetEventSlim();        
 
         static void Main(string[] args)
         {
-
             TestMultithreadRepo();
             //TestLRUCache();
-
-
 		}
 
         static void TestMultithreadRepo()
